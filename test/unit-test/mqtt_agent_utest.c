@@ -1140,6 +1140,34 @@ void test_MQTTAgent_Ping_Invalid_Params( void )
 }
 
 /**
+ * @brief Test that an MQTTNoMemory error is returned when there
+ * is no more space to store a pending acknowledgment for
+ * a command that expects one.
+ */
+void test_MQTTAgent_Ping_No_Ack_Space( void )
+{
+    MQTTAgentContext_t agentContext = { 0 };
+    MQTTStatus_t mqttStatus;
+    MQTTAgentCommandInfo_t commandInfo = { 0 };
+    MQTTAgentCommand_t command = { 0 };
+    size_t i;
+
+    setupAgentContext( &agentContext );
+    pCommandToReturn = &command;
+    commandInfo.cmdCompleteCallback = stubCompletionCallback;
+
+    /* No space in pending ack list. */
+    for( i = 0; i < MQTT_AGENT_MAX_OUTSTANDING_ACKS; i++ )
+    {
+        agentContext.pPendingAcks[ i ].packetId = ( i + 1 );
+    }
+
+    agentContext.mqttContext.networkBuffer.size = 10;
+    mqttStatus = MQTTAgent_Ping( &agentContext, &commandInfo );
+    TEST_ASSERT_EQUAL( MQTTNoMemory, mqttStatus );
+}
+
+/**
  * @brief Test that MQTTAgent_Ping() works as intended.
  */
 void test_MQTTAgent_Ping_success( void )
@@ -1154,6 +1182,7 @@ void test_MQTTAgent_Ping_success( void )
     commandInfo.cmdCompleteCallback = stubCompletionCallback;
 
     /* Success case. */
+    agentContext.mqttContext.networkBuffer.size = 10;
     mqttStatus = MQTTAgent_Ping( &agentContext, &commandInfo );
     TEST_ASSERT_EQUAL( MQTTSuccess, mqttStatus );
     TEST_ASSERT_EQUAL_PTR( &command, globalMessageContext.pSentCommand );
