@@ -911,6 +911,7 @@ static bool validateParams( MQTTAgentCommandType_t commandType,
     bool ret = false;
     const MQTTAgentConnectArgs_t * pConnectArgs = NULL;
     const MQTTAgentSubscribeArgs_t * pSubscribeArgs = NULL;
+    const MQTTPublishInfo_t * pPublishArgs = NULL;
 
     assert( ( commandType == CONNECT ) || ( commandType == PUBLISH ) ||
             ( commandType == SUBSCRIBE ) || ( commandType == UNSUBSCRIBE ) );
@@ -932,6 +933,19 @@ static bool validateParams( MQTTAgentCommandType_t commandType,
             break;
 
         case PUBLISH:
+            pPublishArgs = ( const MQTTPublishInfo_t * ) pParams;
+            ret = ( ( pPublishArgs != NULL ) &&
+                    ( ( pPublishArgs->qos == MQTTQoS0 ) ||
+                      (	pPublishArgs->qos == MQTTQoS1 ) ||
+                      ( pPublishArgs->qos == MQTTQoS2 ) ) &&
+                    ( pPublishArgs->pPayload != NULL ) &&
+                    ( pPublishArgs->payloadLength > 0 ) &&
+                    ( pPublishArgs->payloadLength < 65536 ) &&
+                    ( pPublishArgs->pTopicName != NULL ) &&
+                    ( pPublishArgs->topicNameLength > 0 ) &&
+                    ( pPublishArgs->topicNameLength < 65536 ) );
+            break;
+
         default:
             /* Publish, does not need to be cast since we do not check it. */
             ret = ( pParams != NULL );
@@ -1195,6 +1209,12 @@ MQTTStatus_t MQTTAgent_Publish( const MQTTAgentContext_t * pMqttAgentContext,
                                             pCommandInfo->cmdCompleteCallback,         /* commandCompleteCallback */
                                             pCommandInfo->pCmdCompleteCallbackContext, /* pCommandCompleteCallbackContext */
                                             pCommandInfo->blockTimeMs );
+    }
+    else
+    {
+        LogError( "Invalid Publish request received. "
+                  "pMqttAgentContext: %p, pPublishInfo: %p, pCommandInfo: %p",
+                  pMqttAgentContext, pPublishInfo, pCommandInfo );
     }
 
     return statusReturn;
