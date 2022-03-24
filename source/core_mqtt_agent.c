@@ -437,6 +437,7 @@ static MQTTStatus_t createCommand( MQTTAgentCommandType_t commandType,
     {
         case SUBSCRIBE:
         case UNSUBSCRIBE:
+        case PING:
             assert( pMqttInfoParam != NULL );
 
             /* This message type results in the broker returning an ACK.  The
@@ -473,7 +474,6 @@ static MQTTStatus_t createCommand( MQTTAgentCommandType_t commandType,
             break;
 
         case PROCESSLOOP:
-        case PING:
         case CONNECT:
         case DISCONNECT:
         default:
@@ -663,6 +663,7 @@ static void mqttEventCallback( MQTTContext_t * pMqttContext,
             case MQTT_PACKET_TYPE_PUBCOMP:
             case MQTT_PACKET_TYPE_SUBACK:
             case MQTT_PACKET_TYPE_UNSUBACK:
+            case MQTT_PACKET_TYPE_PINGRESP:
                 pAckInfo = getAwaitingOperation( pAgentContext, packetIdentifier );
 
                 if( pAckInfo != NULL )
@@ -688,7 +689,6 @@ static void mqttEventCallback( MQTTContext_t * pMqttContext,
                 break;
 
             /* Any other packet type is invalid. */
-            case MQTT_PACKET_TYPE_PINGRESP:
             default:
                 LogError( ( "Unknown packet type received:(%02x).\n",
                             pPacketInfo->type ) );
